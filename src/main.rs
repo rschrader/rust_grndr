@@ -9,9 +9,13 @@
 #![no_std]
 #![no_main]
 
-use panic_halt as _;
+extern crate cortex_m_rt as rt;
+extern crate panic_semihosting;
+extern crate cortex_m_semihosting;  //  Debug console functions for ARM Cortex-M3.
 
 use nb::block;
+use panic_semihosting as _;
+use stm32f1xx_hal as _;
 
 use stm32f1xx_hal::{
     prelude::*,
@@ -19,10 +23,14 @@ use stm32f1xx_hal::{
     timer::Timer,
 };
 use cortex_m_rt::entry;
+use cortex_m_semihosting::hprintln;
+use rt::exception;
 use embedded_hal::digital::v2::OutputPin;
 
 #[entry]
 fn main() -> ! {
+    hprintln!("Hello, world!").unwrap();
+
     // Get access to the core peripherals from the cortex-m crate
     let cp = cortex_m::Peripherals::take().unwrap();
     // Get access to the device specific peripherals from the peripheral access crate
@@ -53,4 +61,15 @@ fn main() -> ! {
         block!(timer.wait()).unwrap();
         led.set_low().unwrap();
     }
+}
+
+#[exception]
+fn HardFault(ef: &cortex_m_rt::ExceptionFrame) -> ! {
+    // prints the exception frame as a panic message
+    panic!("{:#?}", ef);
+}
+
+#[exception]
+fn DefaultHandler(irqn: i16) {
+    panic!("Unhandled exception (IRQn = {})", irqn);
 }
